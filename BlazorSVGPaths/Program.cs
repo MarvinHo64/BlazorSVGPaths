@@ -12,6 +12,7 @@ builder.Services.AddScoped(sp =>
 
 builder.Services
     .AddSingleton<MouseService>()
-    .AddSingleton<IMouseService>(ff => ff.GetRequiredService<MouseService>());
+    .AddSingleton<IMouseService>(ff => ff.GetRequiredService<MouseService>())
+    .AddLogging();
 
 await builder.Build().RunAsync();
