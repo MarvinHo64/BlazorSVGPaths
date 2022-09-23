@@ -11,8 +11,21 @@
     <link href="BlazorSVGPaths.styles.css" rel="stylesheet" />
 </head>
 
-<body>
-    <div id="app">Loading...</div>
+<body class="d-flex flex-column h-100">
+<div class="flex-shrink-0 mb-5">
+    <div class="container">
+        <h1 class="mt-5">Blazor SVG Connections Demo</h1>
+        <p class="lead">
+        </p>
+        <div id="app">
+            <div class="text-center mt-2">
+                <div class="spinner-border text-secondary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
     <div id="blazor-error-ui">
         An unhandled error has occurred.

@@ -1,0 +1,119 @@
+@using BlazorSVGPaths.Pages
+@using BlazorSVGPaths.Services
+@using BlazorSVGPaths.ViewModels
+@using Microsoft.Extensions.Logging
+@inject ILogger<Pullable> Logger;
+@inject IMouseService mouseSrv;
+<marker
+      id="arrow"
+      viewBox="0 0 10 10"
+      refX="10"
+      refY="5"
+      markerWidth="6"
+      markerHeight="6"
+      stroke="rgb(108, 117, 125)"
+      fill="rgb(108, 117, 125)"
+      orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" />
+    </marker>
+<g @onmousedown="OnDown" cursor="@_cursor" @onmousedown:stopPropagation="true">
+    <circle r="6" transform="translate(@(X1+100), @(Y1+25))" fill="white" stroke="gray"/>
+    <polyline points="0,0 0,2 0,-2 0,0 2,0 -2,0" transform="translate(@(X1+100), @(Y1+25))" style="fill:none;stroke:lime;stroke-width:1"/>
+    @if (_isDown)
+    {
+        <path d="M @(X1+6) @Y1 C @c1x @c1y, @c2x @c2y, @X2 @Y2" transform="translate(100, 25)" stroke="rgb(108, 117, 125)" stroke-width="1.5" fill="transparent" marker-end="url(#arrow)"/>
+    }
+</g>
+
+@code {
+    [Parameter] public IPositioningService positioningSrv { get; set; }
+    
+    [Parameter] public Direction Dir1 { get; set; } = Direction.Right;
+    [Parameter] public double X1 { get; set; }
+    [Parameter] public double Y1 { get; set; }
+
+    [Parameter] public Direction Dir2 { get; set; } = Direction.Left;
+    [Parameter] public double X2 { get; set; }
+    [Parameter] public double Y2 { get; set; }
+
+    double c1x;
+    double c2x;
+    double c1y => Y1;
+    double c2y => Y2;
+
+    protected override void OnParametersSet()
+    {
+        c1x = cx(Dir1, X1);
+        c2x = cx(Dir2, X2);
+        base.OnParametersSet();
+    }
+
+        const int coef = 0;
+
+    double cx(Direction dir, double x)
+        => dir == Direction.Right ? x + coef : x - coef;
+
+
+    public enum Direction {
+        Right,
+        Left
+    }
+    
+    private void OnMove(object? sender, MouseEventArgs e)
+    {
+        if (!_isDown) return;
+
+        X2 = e.ClientX - _cursorX + X1;
+        Y2 = e.ClientY - _cursorY + Y1;
+
+        _hasMoved = true;
+    }
+    
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter, EditorRequired]
+    public DraggableObject? LearningObject { get; set; }
+
+    //cursorX and cursorY are used to remove the offset between cursor and element on move, so we only get a delta
+    private double _cursorX;
+    private double _cursorY;
+
+    private bool _isDown;
+    private string _cursor = "grab";
+    private bool _hasMoved;
+    
+    protected override void OnInitialized()
+    {
+        X2 = X1;
+        Y2 = Y1;
+        mouseSrv.OnMove += OnMove;
+        mouseSrv.OnUp += OnUpOrOut;
+        mouseSrv.OnOut += OnUpOrOut;
+        base.OnInitialized();
+    }
+    
+    private void OnDown(MouseEventArgs e)
+    {
+        _cursorX = e.ClientX;
+        _cursorY = e.ClientY;
+        X2 = e.ClientX - _cursorX + X1;
+        Y2 = e.ClientY - _cursorY + Y1;
+        _isDown = true;
+        _cursor = "grabbing";
+        _hasMoved = false;
+    }
+    
+    private void OnUpOrOut(object? sender, MouseEventArgs e)
+    {
+        if (_isDown)
+        {
+            var obj = positioningSrv.GetObjectAtPosition(X2+100, Y2+25);
+            if (obj != null)
+            {
+                positioningSrv.AddConnection(new Connection(LearningObject, obj));
+            }
+        }
+        _isDown = false;
+    }
+}

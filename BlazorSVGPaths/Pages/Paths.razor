@@ -1,6 +1,117 @@
-@page "/Paths"
-<h3>Paths</h3>
+@using BlazorSVGPaths.Services
+@using BlazorSVGPaths.ViewModels
+@using BlazorSVGPaths.Components
+@implements IPositioningService
+@inject MouseService mouseSrv;
+
+<div class="row mt-2">
+    <div class="col">
+        <button @onclick="AddDraggableObject"> Add Object</button> 
+        <button @onclick="DeleteDraggableObject">Delete Object</button>
+        <svg class="bg-light" width="100%" height="500" xmlns="http://www.w3.org/2000/svg"
+             @onmousemove=@(e => mouseSrv.FireMove(this, e))
+            @onmouseup=@(e => mouseSrv.FireUp(this, e))
+            @onmouseleave=@(e => mouseSrv.FireOut(this, e))>
+
+            @foreach (var plt in DraggableObjects)
+            {
+                <Draggable @bind-X=plt.X @bind-Y=plt.Y OnClicked="@SetSelectedObject" LearningObject="plt">
+                    <rect height="50" width="100" style="fill:lightgreen;stroke:black"></rect>
+                    <Clickable OnClicked="DeleteLastConnection" LearningObject="plt">
+                        @if (plt.ConnectIn.Any())
+                        {
+                            <circle r="6" transform="translate(0, 25)" fill="white" stroke="gray"/>
+                            <polyline points="0,0 2,0 -2,0" transform="translate(0,25)" style="fill:none;stroke:red;stroke-width:1"/>
+                        }
+                    </Clickable>
+                </Draggable>
+                <Pullable X1=plt.X Y1=plt.Y LearningObject="plt" positioningSrv="this"> </Pullable>
+            }
+
+            @foreach (var con in Connections)
+            {
+                <Connector X1=@(con.From.RootX + 6) Y1=con.From.RootY Dir1=Direction.Right X2=@(con.To.ConnectX - 6) Y2=con.To.ConnectY Dir2=Direction.Left/>
+            }
+
+        </svg>
+    </div>
+</div>
 
 @code {
+    [Parameter] public IList<DraggableObject> DraggableObjects { get; set; } = new List<DraggableObject>(); 
+    [Parameter] public IList<Connection?> Connections { get; set; } = new List<Connection?>();
+    [Parameter] public DraggableObject? SelectedObject { get; set; }
+
+    private void SetSelectedObject(DraggableObject obj)
+    {
+        SelectedObject = obj;
+    }
     
+    private void AddDraggableObject()
+    {
+        var newObject = new DraggableObject();
+        DraggableObjects.Add(newObject);
+        SelectedObject = newObject;
+    }
+    
+    private void DeleteDraggableObject()
+    {
+        if(SelectedObject != null)
+        {
+            DraggableObjects.Remove(SelectedObject);
+        }
+        SetSelectedObject(DraggableObjects.Last());
+        InvokeAsync(StateHasChanged);
+    }
+    
+    void DeleteLastConnection(DraggableObject plt)
+    {
+        var connection = Connections.Last(c => c.To == plt);
+        if (connection == null) return;
+        Connections.Remove(connection);
+        connection.From.ConnectOut.Remove(connection.To);
+        connection.To.ConnectIn.Remove(connection.From);
+    }
+    
+    public DraggableObject? GetObjectAtPosition(double x, double y)
+    {
+        return DraggableObjects.FirstOrDefault(p => p.X <= x && p.X + 100 >= x && p.Y <= y && p.Y + 50 >= y);
+    }
+
+    public void AddConnection(Connection connection)
+    {
+        if(Connections.Any(con => con == connection) || connection.From == connection.To || IsCircular(connection))
+        {
+            return;
+        }
+
+        Connections.Add(connection);
+        connection.From.ConnectOut.Add(connection.To);
+        connection.To.ConnectIn.Add(connection.From); 
+    }
+    
+    private bool IsCircular(Connection connection)
+    {
+        var objectFromConnect = connection.From;
+        var objectToConnect = connection.To;
+        
+        if(!objectToConnect.ConnectOut.Any())
+        {
+            return false;
+        }
+        return IsCircularHelper(objectToConnect.ConnectOut, objectFromConnect);
+    }
+
+    private bool IsCircularHelper(IList<DraggableObject> connectOut, DraggableObject objectFromConnect)
+    {
+        foreach (var conOut in connectOut)
+        {
+            if(conOut == objectFromConnect){return true;}
+            if(conOut.ConnectOut.Any())
+            {
+                return IsCircularHelper(conOut.ConnectOut, objectFromConnect);
+            }
+        }
+        return false;
+    }
 }
