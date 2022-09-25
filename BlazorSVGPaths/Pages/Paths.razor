@@ -16,7 +16,8 @@
             @foreach (var plt in DraggableObjects)
             {
                 <Draggable @bind-X=plt.X @bind-Y=plt.Y OnClicked="@SetSelectedObject" LearningObject="plt">
-                    <rect height="50" width="100" style="fill:lightgreen;stroke:black"></rect>
+                    <rect height="50" width="100" stroke="black" fill="@plt.Color"></rect>
+                     <text x="3" y="15">@plt.Id</text>
                     <Clickable OnClicked="DeleteLastConnection" LearningObject="plt">
                         @if (plt.ConnectIn.Any())
                         {
@@ -41,24 +42,40 @@
     [Parameter] public IList<DraggableObject> DraggableObjects { get; set; } = new List<DraggableObject>(); 
     [Parameter] public IList<Connection?> Connections { get; set; } = new List<Connection?>();
     [Parameter] public DraggableObject? SelectedObject { get; set; }
+    [Parameter] public int ObjectIds { get; set; }
 
     private void SetSelectedObject(DraggableObject obj)
     {
+        if(SelectedObject != null)
+        {
+            SelectedObject.Color = "lightgreen";
+        }
         SelectedObject = obj;
+        SelectedObject.Color = "lime";
     }
     
     private void AddDraggableObject()
     {
-        var newObject = new DraggableObject();
+        ObjectIds += 1;
+        var newObject = new DraggableObject(ObjectIds);
         DraggableObjects.Add(newObject);
-        SelectedObject = newObject;
+        SetSelectedObject(newObject);
     }
     
     private void DeleteDraggableObject()
     {
         if(SelectedObject != null)
         {
+            foreach (var connectIn in SelectedObject.ConnectIn)
+            {
+                Connections.Where(c => c.From == connectIn && c.To == SelectedObject).ToList().ForEach(c => Connections.Remove(c));
+            }
+            foreach (var connectOut in SelectedObject.ConnectOut)
+            {
+                Connections.Where(c => c.From == SelectedObject && c.To == connectOut).ToList().ForEach(c => Connections.Remove(c));
+            }
             DraggableObjects.Remove(SelectedObject);
+            SelectedObject = null;
         }
         SetSelectedObject(DraggableObjects.Last());
         InvokeAsync(StateHasChanged);
