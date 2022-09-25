@@ -3,7 +3,6 @@
 @using BlazorSVGPaths.Components
 @implements IPositioningService
 @inject MouseService mouseSrv;
-
 <div class="row mt-2">
     <div class="col">
         <button @onclick="AddDraggableObject"> Add Object</button> 
@@ -16,8 +15,15 @@
             @foreach (var plt in DraggableObjects)
             {
                 <Draggable @bind-X=plt.X @bind-Y=plt.Y OnClicked="@SetSelectedObject" LearningObject="plt">
+                    @if (plt == OnHover)
+                    {
+                        <rect transform="translate(-3, -3)" height="56" width="106" fill="lightblue"></rect>
+                        <circle r="6" transform="translate(0, 25)" fill="lightblue"/>
+                        <polyline transform="translate(-30, 25)" stroke="lightblue" stroke-width="1.5" fill="transparent" marker-end="url(#hover)" points="0,0 20,0"/>
+                        
+                    }
                     <rect height="50" width="100" stroke="black" fill="@plt.Color"></rect>
-                     <text x="3" y="15">@plt.Id</text>
+                    <text x="3" y="15">@plt.Id</text>
                     <Clickable OnClicked="DeleteLastConnection" LearningObject="plt">
                         @if (plt.ConnectIn.Any())
                         {
@@ -43,6 +49,7 @@
     [Parameter] public IList<Connection?> Connections { get; set; } = new List<Connection?>();
     [Parameter] public DraggableObject? SelectedObject { get; set; }
     [Parameter] public int ObjectIds { get; set; }
+    [Parameter] public DraggableObject? OnHover { get; set; }
 
     private void SetSelectedObject(DraggableObject obj)
     {
@@ -104,7 +111,8 @@
 
         Connections.Add(connection);
         connection.From.ConnectOut.Add(connection.To);
-        connection.To.ConnectIn.Add(connection.From); 
+        connection.To.ConnectIn.Add(connection.From);
+        OnHover = null;
     }
     
     private bool IsCircular(Connection connection)
@@ -131,4 +139,15 @@
         }
         return false;
     }
+
+    void IPositioningService.OnHover(DraggableObject? draggableObject)
+    {
+        OnHover = draggableObject;
+    }
+
+    public void OnHoverDown()
+    {
+        OnHover = null;
+    }
+
 }
