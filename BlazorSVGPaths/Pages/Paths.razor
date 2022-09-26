@@ -108,6 +108,7 @@
     {
         if(Connections.Any(con => con == connection) || connection.From == connection.To || IsCircular(connection))
         {
+            OnHover = null;
             return;
         }
 
@@ -119,27 +120,35 @@
     
     private bool IsCircular(Connection connection)
     {
+        var isCircular = false;
         var objectFromConnect = connection.From;
         var objectToConnect = connection.To;
-        
+
         if(!objectToConnect.ConnectOut.Any())
         {
             return false;
         }
-        return IsCircularHelper(objectToConnect.ConnectOut, objectFromConnect);
-    }
-
-    private bool IsCircularHelper(IList<DraggableObject> connectOut, DraggableObject objectFromConnect)
-    {
-        foreach (var conOut in connectOut)
+        var connectOut = objectToConnect.ConnectOut;
+        var connectOut2 = new List<DraggableObject>();
+        
+        while (isCircular == false)
         {
-            if(conOut == objectFromConnect){return true;}
-            if(conOut.ConnectOut.Any())
+            foreach (var draggableObj in connectOut)
             {
-                return IsCircularHelper(conOut.ConnectOut, objectFromConnect);
+                if(draggableObj == objectFromConnect)
+                {
+                    isCircular = true;
+                }
+                connectOut2.AddRange(draggableObj.ConnectOut);
             }
+            if (!connectOut.Any())
+            {
+                break;
+            }
+            connectOut  = connectOut2;
+            connectOut2 = new List<DraggableObject>();
         }
-        return false;
+        return isCircular;
     }
 
     void IPositioningService.OnHover(DraggableObject? draggableObject)
