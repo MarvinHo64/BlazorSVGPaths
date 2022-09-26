@@ -76,10 +76,12 @@
             foreach (var connectIn in SelectedObject.ConnectIn)
             {
                 Connections.Where(c => c.From == connectIn && c.To == SelectedObject).ToList().ForEach(c => Connections.Remove(c));
+                connectIn.ConnectOut.Remove(SelectedObject);
             }
             foreach (var connectOut in SelectedObject.ConnectOut)
             {
                 Connections.Where(c => c.From == SelectedObject && c.To == connectOut).ToList().ForEach(c => Connections.Remove(c));
+                connectOut.ConnectIn.Remove(SelectedObject);
             }
             DraggableObjects.Remove(SelectedObject);
             SelectedObject = null;
