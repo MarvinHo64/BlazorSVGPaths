@@ -1,6 +1,6 @@
 @using BlazorSVGPaths.Services
 @using BlazorSVGPaths.ViewModels
-@inject IMouseService mouseSrv;
+@inject IMouseService MouseSrv;
 <g @onmousedown="OnDown" @onmousedown:stopPropagation="true">
     @ChildContent
 </g>
@@ -21,8 +21,8 @@
 
     protected override void OnInitialized()
     {
-        mouseSrv.OnUp += OnUpOrOut;
-        mouseSrv.OnOut += OnUpOrOut;
+        MouseSrv.OnUp += OnUpOrOut;
+        MouseSrv.OnOut += OnUpOrOut;
         base.OnInitialized();
     }
     

@@ -2,15 +2,15 @@
 @using BlazorSVGPaths.ViewModels
 @using BlazorSVGPaths.Components
 @implements IPositioningService
-@inject MouseService mouseSrv;
+@inject MouseService MouseSrv;
 <div class="row mt-2">
     <div class="col">
         <button @onclick="AddDraggableObject"> Add Object</button> 
         <button @onclick="DeleteDraggableObject">Delete Object</button>
         <svg class="bg-light" width="100%" height="500" xmlns="http://www.w3.org/2000/svg"
-             @onmousemove=@(e => mouseSrv.FireMove(this, e))
-            @onmouseup=@(e => mouseSrv.FireUp(this, e))
-            @onmouseleave=@(e => mouseSrv.FireOut(this, e))>
+             @onmousemove=@(e => MouseSrv.FireMove(this, e))
+            @onmouseup=@(e => MouseSrv.FireUp(this, e))
+            @onmouseleave=@(e => MouseSrv.FireOut(this, e))>
 
             @foreach (var plt in DraggableObjects)
             {
@@ -32,12 +32,15 @@
                         }
                     </Clickable>
                 </Draggable>
-                <Pullable X1=plt.X Y1=plt.Y LearningObject="plt" positioningSrv="this"> </Pullable>
+                <Pullable X1=plt.X Y1=plt.Y LearningObject="plt" PositioningSrv="this"> </Pullable>
             }
 
             @foreach (var con in Connections)
             {
-                <Connector X1=@(con.From.RootX + 6) Y1=con.From.RootY Dir1=Direction.Right X2=@(con.To.ConnectX - 6) Y2=con.To.ConnectY Dir2=Direction.Left/>
+                if (con != null)
+                {
+                    <Connector X1=@(con.From.RootX + 6) Y1=con.From.RootY Dir1=Direction.Right X2=@(con.To.ConnectX - 6) Y2=con.To.ConnectY Dir2=Direction.Left/>
+                }
             }
 
         </svg>
@@ -75,12 +78,12 @@
         {
             foreach (var connectIn in SelectedObject.ConnectIn)
             {
-                Connections.Where(c => c.From == connectIn && c.To == SelectedObject).ToList().ForEach(c => Connections.Remove(c));
+                Connections.Where(c => c?.From == connectIn && c.To == SelectedObject).ToList().ForEach(c => Connections.Remove(c));
                 connectIn.ConnectOut.Remove(SelectedObject);
             }
             foreach (var connectOut in SelectedObject.ConnectOut)
             {
-                Connections.Where(c => c.From == SelectedObject && c.To == connectOut).ToList().ForEach(c => Connections.Remove(c));
+                Connections.Where(c => c?.From == SelectedObject && c.To == connectOut).ToList().ForEach(c => Connections.Remove(c));
                 connectOut.ConnectIn.Remove(SelectedObject);
             }
             DraggableObjects.Remove(SelectedObject);
@@ -92,7 +95,7 @@
     
     void DeleteLastConnection(DraggableObject plt)
     {
-        var connection = Connections.Last(c => c.To == plt);
+        var connection = Connections.Last(c => c?.To == plt);
         if (connection == null) return;
         Connections.Remove(connection);
         connection.From.ConnectOut.Remove(connection.To);
